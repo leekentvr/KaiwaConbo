@@ -1,0 +1,304 @@
+{
+  "grammar": [
+    {
+      "id": "g001",
+      "level": "N5",
+      "pattern": "〜は〜です",
+      "romaji": "~ wa ~ desu",
+      "meaning": "~ is ~",
+      "example": "これは本です。",
+      "example_en": "This is a book.",
+      "topic": ["basics", "general"]
+    },
+    {
+      "id": "g002",
+      "level": "N5",
+      "pattern": "〜が好きです",
+      "romaji": "~ ga suki desu",
+      "meaning": "I like ~",
+      "example": "私は音楽が好きです。",
+      "example_en": "I like music.",
+      "topic": ["feelings", "general"]
+    },
+    {
+      "id": "g003",
+      "level": "N5",
+      "pattern": "〜ましょう",
+      "romaji": "~ mashou",
+      "meaning": "Let's ~",
+      "example": "食べましょう。",
+      "example_en": "Let's eat.",
+      "topic": ["suggestions", "general"]
+    },
+    {
+      "id": "g004",
+      "level": "N5",
+      "pattern": "〜たいです",
+      "romaji": "~ tai desu",
+      "meaning": "I want to ~",
+      "example": "旅行したいです。",
+      "example_en": "I want to travel.",
+      "topic": ["desires", "general"]
+    },
+    {
+      "id": "g005",
+      "level": "N5",
+      "pattern": "〜ています",
+      "romaji": "~ te imasu",
+      "meaning": "is doing ~ / have done ~",
+      "example": "今、勉強しています。",
+      "example_en": "I am studying now.",
+      "topic": ["actions", "general"]
+    },
+    {
+      "id": "g006",
+      "level": "N5",
+      "pattern": "〜に行きます",
+      "romaji": "~ ni ikimasu",
+      "meaning": "go to ~",
+      "example": "学校に行きます。",
+      "example_en": "I go to school.",
+      "topic": ["movement", "general"]
+    },
+    {
+      "id": "g007",
+      "level": "N5",
+      "pattern": "〜もいいですか",
+      "romaji": "~ mo ii desu ka",
+      "meaning": "Is it okay to ~ ?",
+      "example": "写真を撮ってもいいですか。",
+      "example_en": "Is it okay to take a photo?",
+      "topic": ["permission", "general"]
+    },
+    {
+      "id": "g008",
+      "level": "N5",
+      "pattern": "〜ません",
+      "romaji": "~ masen",
+      "meaning": "do not ~ (polite negative)",
+      "example": "肉を食べません。",
+      "example_en": "I don't eat meat.",
+      "topic": ["negation", "general"]
+    },
+    {
+      "id": "g009",
+      "level": "N4",
+      "pattern": "〜たことがある",
+      "romaji": "~ ta koto ga aru",
+      "meaning": "have experienced ~",
+      "example": "富士山に登ったことがあります。",
+      "example_en": "I have climbed Mt. Fuji.",
+      "topic": ["experience", "general"]
+    },
+    {
+      "id": "g010",
+      "level": "N4",
+      "pattern": "〜てから",
+      "romaji": "~ te kara",
+      "meaning": "after doing ~",
+      "example": "食べてから勉強します。",
+      "example_en": "I will study after eating.",
+      "topic": ["sequence", "general"]
+    },
+    {
+      "id": "g011",
+      "level": "N4",
+      "pattern": "〜ながら",
+      "romaji": "~ nagara",
+      "meaning": "while doing ~",
+      "example": "音楽を聴きながら走ります。",
+      "example_en": "I run while listening to music.",
+      "topic": ["simultaneous", "general"]
+    },
+    {
+      "id": "g012",
+      "level": "N4",
+      "pattern": "〜ばよかった",
+      "romaji": "~ ba yokatta",
+      "meaning": "I should have ~",
+      "example": "早く起きればよかった。",
+      "example_en": "I should have woken up earlier.",
+      "topic": ["regret", "general"]
+    },
+    {
+      "id": "g013",
+      "level": "N4",
+      "pattern": "〜そうです",
+      "romaji": "~ sou desu",
+      "meaning": "it seems / looks like ~",
+      "example": "雨が降りそうです。",
+      "example_en": "It looks like it will rain.",
+      "topic": ["appearance", "general"]
+    },
+    {
+      "id": "g014",
+      "level": "N4",
+      "pattern": "〜てもいい",
+      "romaji": "~ te mo ii",
+      "meaning": "it's okay to ~ / may ~",
+      "example": "ここに座ってもいいですよ。",
+      "example_en": "You may sit here.",
+      "topic": ["permission", "general"]
+    },
+    {
+      "id": "g015",
+      "level": "N4",
+      "pattern": "〜なければならない",
+      "romaji": "~ nakereba naranai",
+      "meaning": "must ~ / have to ~",
+      "example": "薬を飲まなければなりません。",
+      "example_en": "I must take medicine.",
+      "topic": ["obligation", "general"]
+    },
+    {
+      "id": "g016",
+      "level": "N3",
+      "pattern": "〜わけではない",
+      "romaji": "~ wake de wa nai",
+      "meaning": "it doesn't mean that ~",
+      "example": "嫌いなわけではありません。",
+      "example_en": "It doesn't mean I dislike it.",
+      "topic": ["nuance", "general"]
+    },
+    {
+      "id": "g017",
+      "level": "N3",
+      "pattern": "〜に対して",
+      "romaji": "~ ni taishite",
+      "meaning": "towards ~ / regarding ~",
+      "example": "環境問題に対して真剣です。",
+      "example_en": "I am serious about environmental issues.",
+      "topic": ["relationships", "general"]
+    },
+    {
+      "id": "g018",
+      "level": "N3",
+      "pattern": "〜ようになった",
+      "romaji": "~ you ni natta",
+      "meaning": "have come to ~ / started to ~",
+      "example": "日本語が話せるようになりました。",
+      "example_en": "I have come to be able to speak Japanese.",
+      "topic": ["change", "general"]
+    },
+    {
+      "id": "g019",
+      "level": "N3",
+      "pattern": "〜はずだ",
+      "romaji": "~ hazu da",
+      "meaning": "should be ~ / expected to ~",
+      "example": "彼はもう来るはずです。",
+      "example_en": "He should be coming soon.",
+      "topic": ["expectation", "general"]
+    },
+    {
+      "id": "g020",
+      "level": "N3",
+      "pattern": "〜によって",
+      "romaji": "~ ni yotte",
+      "meaning": "depending on ~ / due to ~",
+      "example": "人によって意見が違います。",
+      "example_en": "Opinions differ depending on the person.",
+      "topic": ["cause", "general"]
+    },
+    {
+      "id": "g021",
+      "level": "N2",
+      "pattern": "〜に加えて",
+      "romaji": "~ ni kuwaete",
+      "meaning": "in addition to ~",
+      "example": "英語に加えて日本語も話せます。",
+      "example_en": "In addition to English, I can speak Japanese.",
+      "topic": ["addition", "business"]
+    },
+    {
+      "id": "g022",
+      "level": "N2",
+      "pattern": "〜につれて",
+      "romaji": "~ ni tsurete",
+      "meaning": "as ~ / in proportion to ~",
+      "example": "年をとるにつれて知恵がつきます。",
+      "example_en": "As you get older, you gain wisdom.",
+      "topic": ["change", "general"]
+    },
+    {
+      "id": "g023",
+      "level": "N2",
+      "pattern": "〜かねない",
+      "romaji": "~ kane nai",
+      "meaning": "might ~ / could possibly ~",
+      "example": "無理をすると倒れかねない。",
+      "example_en": "If you push yourself, you might collapse.",
+      "topic": ["risk", "general"]
+    },
+    {
+      "id": "g024",
+      "level": "N2",
+      "pattern": "〜を通じて",
+      "romaji": "~ wo tsujite",
+      "meaning": "through ~ / throughout ~",
+      "example": "音楽を通じて友達ができました。",
+      "example_en": "I made friends through music.",
+      "topic": ["means", "general"]
+    },
+    {
+      "id": "g025",
+      "level": "N1",
+      "pattern": "〜をもとに",
+      "romaji": "~ wo moto ni",
+      "meaning": "based on ~ / drawing from ~",
+      "example": "経験をもとに話しました。",
+      "example_en": "I spoke based on experience.",
+      "topic": ["basis", "general"]
+    },
+    {
+      "id": "g026",
+      "level": "N1",
+      "pattern": "〜ことなく",
+      "romaji": "~ koto naku",
+      "meaning": "without ~ing",
+      "example": "諦めることなく続けました。",
+      "example_en": "I continued without giving up.",
+      "topic": ["contrast", "general"]
+    },
+    {
+      "id": "g027",
+      "level": "N1",
+      "pattern": "〜に至るまで",
+      "romaji": "~ ni itaru made",
+      "meaning": "up to and including ~",
+      "example": "細部に至るまで確認しました。",
+      "example_en": "I checked everything down to the last detail.",
+      "topic": ["extent", "general"]
+    },
+    {
+      "id": "g028",
+      "level": "N5",
+      "pattern": "〜ください",
+      "romaji": "~ kudasai",
+      "meaning": "please do ~",
+      "example": "ここに書いてください。",
+      "example_en": "Please write it here.",
+      "topic": ["requests", "general"]
+    },
+    {
+      "id": "g029",
+      "level": "N5",
+      "pattern": "〜はどこですか",
+      "romaji": "~ wa doko desu ka",
+      "meaning": "where is ~ ?",
+      "example": "トイレはどこですか。",
+      "example_en": "Where is the bathroom?",
+      "topic": ["questions", "travel"]
+    },
+    {
+      "id": "g030",
+      "level": "N4",
+      "pattern": "〜ようとする",
+      "romaji": "~ you to suru",
+      "meaning": "try to ~ / attempt to ~",
+      "example": "問題を解こうとしています。",
+      "example_en": "I am trying to solve the problem.",
+      "topic": ["attempts", "general"]
+    }
+  ]
+}

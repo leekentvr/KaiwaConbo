@@ -1,0 +1,454 @@
+{
+  "vocabulary": [
+    {
+      "id": "v001",
+      "level": "N5",
+      "word": "食べる",
+      "furigana": "たべる",
+      "romaji": "taberu",
+      "meaning": "to eat",
+      "part_of_speech": "verb",
+      "topic": ["food", "general"]
+    },
+    {
+      "id": "v002",
+      "level": "N5",
+      "word": "飲む",
+      "furigana": "のむ",
+      "romaji": "nomu",
+      "meaning": "to drink",
+      "part_of_speech": "verb",
+      "topic": ["food", "general"]
+    },
+    {
+      "id": "v003",
+      "level": "N5",
+      "word": "学校",
+      "furigana": "がっこう",
+      "romaji": "gakkou",
+      "meaning": "school",
+      "part_of_speech": "noun",
+      "topic": ["school", "general"]
+    },
+    {
+      "id": "v004",
+      "level": "N5",
+      "word": "友達",
+      "furigana": "ともだち",
+      "romaji": "tomodachi",
+      "meaning": "friend",
+      "part_of_speech": "noun",
+      "topic": ["people", "general"]
+    },
+    {
+      "id": "v005",
+      "level": "N5",
+      "word": "大きい",
+      "furigana": "おおきい",
+      "romaji": "ookii",
+      "meaning": "big",
+      "part_of_speech": "adjective",
+      "topic": ["descriptions", "general"]
+    },
+    {
+      "id": "v006",
+      "level": "N5",
+      "word": "電車",
+      "furigana": "でんしゃ",
+      "romaji": "densha",
+      "meaning": "train",
+      "part_of_speech": "noun",
+      "topic": ["travel", "general"]
+    },
+    {
+      "id": "v007",
+      "level": "N5",
+      "word": "買う",
+      "furigana": "かう",
+      "romaji": "kau",
+      "meaning": "to buy",
+      "part_of_speech": "verb",
+      "topic": ["shopping", "general"]
+    },
+    {
+      "id": "v008",
+      "level": "N5",
+      "word": "水",
+      "furigana": "みず",
+      "romaji": "mizu",
+      "meaning": "water",
+      "part_of_speech": "noun",
+      "topic": ["food", "general"]
+    },
+    {
+      "id": "v009",
+      "level": "N5",
+      "word": "猫",
+      "furigana": "ねこ",
+      "romaji": "neko",
+      "meaning": "cat",
+      "part_of_speech": "noun",
+      "topic": ["animals", "general"]
+    },
+    {
+      "id": "v010",
+      "level": "N5",
+      "word": "天気",
+      "furigana": "てんき",
+      "romaji": "tenki",
+      "meaning": "weather",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v011",
+      "level": "N5",
+      "word": "見る",
+      "furigana": "みる",
+      "romaji": "miru",
+      "meaning": "to see / watch",
+      "part_of_speech": "verb",
+      "topic": ["general"]
+    },
+    {
+      "id": "v012",
+      "level": "N5",
+      "word": "本",
+      "furigana": "ほん",
+      "romaji": "hon",
+      "meaning": "book",
+      "part_of_speech": "noun",
+      "topic": ["school", "general"]
+    },
+    {
+      "id": "v013",
+      "level": "N5",
+      "word": "嬉しい",
+      "furigana": "うれしい",
+      "romaji": "ureshii",
+      "meaning": "happy",
+      "part_of_speech": "adjective",
+      "topic": ["feelings", "general"]
+    },
+    {
+      "id": "v014",
+      "level": "N5",
+      "word": "料理",
+      "furigana": "りょうり",
+      "romaji": "ryouri",
+      "meaning": "cooking / cuisine",
+      "part_of_speech": "noun",
+      "topic": ["food", "general"]
+    },
+    {
+      "id": "v015",
+      "level": "N5",
+      "word": "仕事",
+      "furigana": "しごと",
+      "romaji": "shigoto",
+      "meaning": "work / job",
+      "part_of_speech": "noun",
+      "topic": ["business", "general"]
+    },
+    {
+      "id": "v016",
+      "level": "N4",
+      "word": "運動",
+      "furigana": "うんどう",
+      "romaji": "undou",
+      "meaning": "exercise / movement",
+      "part_of_speech": "noun",
+      "topic": ["health", "general"]
+    },
+    {
+      "id": "v017",
+      "level": "N4",
+      "word": "経験",
+      "furigana": "けいけん",
+      "romaji": "keiken",
+      "meaning": "experience",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v018",
+      "level": "N4",
+      "word": "準備する",
+      "furigana": "じゅんびする",
+      "romaji": "junbi suru",
+      "meaning": "to prepare",
+      "part_of_speech": "verb",
+      "topic": ["general"]
+    },
+    {
+      "id": "v019",
+      "level": "N4",
+      "word": "連絡",
+      "furigana": "れんらく",
+      "romaji": "renraku",
+      "meaning": "contact / communication",
+      "part_of_speech": "noun",
+      "topic": ["business", "general"]
+    },
+    {
+      "id": "v020",
+      "level": "N4",
+      "word": "旅行",
+      "furigana": "りょこう",
+      "romaji": "ryokou",
+      "meaning": "travel / trip",
+      "part_of_speech": "noun",
+      "topic": ["travel", "general"]
+    },
+    {
+      "id": "v021",
+      "level": "N4",
+      "word": "約束",
+      "furigana": "やくそく",
+      "romaji": "yakusoku",
+      "meaning": "promise / appointment",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v022",
+      "level": "N4",
+      "word": "困る",
+      "furigana": "こまる",
+      "romaji": "komaru",
+      "meaning": "to be troubled",
+      "part_of_speech": "verb",
+      "topic": ["feelings", "general"]
+    },
+    {
+      "id": "v023",
+      "level": "N4",
+      "word": "自信",
+      "furigana": "じしん",
+      "romaji": "jishin",
+      "meaning": "confidence",
+      "part_of_speech": "noun",
+      "topic": ["feelings", "general"]
+    },
+    {
+      "id": "v024",
+      "level": "N4",
+      "word": "文化",
+      "furigana": "ぶんか",
+      "romaji": "bunka",
+      "meaning": "culture",
+      "part_of_speech": "noun",
+      "topic": ["society", "general"]
+    },
+    {
+      "id": "v025",
+      "level": "N4",
+      "word": "発表する",
+      "furigana": "はっぴょうする",
+      "romaji": "happyou suru",
+      "meaning": "to present / announce",
+      "part_of_speech": "verb",
+      "topic": ["school", "business"]
+    },
+    {
+      "id": "v026",
+      "level": "N3",
+      "word": "影響",
+      "furigana": "えいきょう",
+      "romaji": "eikyou",
+      "meaning": "influence / effect",
+      "part_of_speech": "noun",
+      "topic": ["society", "general"]
+    },
+    {
+      "id": "v027",
+      "level": "N3",
+      "word": "解決する",
+      "furigana": "かいけつする",
+      "romaji": "kaiketsu suru",
+      "meaning": "to resolve / solve",
+      "part_of_speech": "verb",
+      "topic": ["general"]
+    },
+    {
+      "id": "v028",
+      "level": "N3",
+      "word": "貢献",
+      "furigana": "こうけん",
+      "romaji": "kouken",
+      "meaning": "contribution",
+      "part_of_speech": "noun",
+      "topic": ["business", "society"]
+    },
+    {
+      "id": "v029",
+      "level": "N3",
+      "word": "記憶",
+      "furigana": "きおく",
+      "romaji": "kioku",
+      "meaning": "memory / recollection",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v030",
+      "level": "N3",
+      "word": "環境",
+      "furigana": "かんきょう",
+      "romaji": "kankyou",
+      "meaning": "environment",
+      "part_of_speech": "noun",
+      "topic": ["society", "general"]
+    },
+    {
+      "id": "v031",
+      "level": "N3",
+      "word": "努力する",
+      "furigana": "どりょくする",
+      "romaji": "doryoku suru",
+      "meaning": "to make an effort",
+      "part_of_speech": "verb",
+      "topic": ["general"]
+    },
+    {
+      "id": "v032",
+      "level": "N3",
+      "word": "機会",
+      "furigana": "きかい",
+      "romaji": "kikai",
+      "meaning": "opportunity / chance",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v033",
+      "level": "N2",
+      "word": "施策",
+      "furigana": "しさく",
+      "romaji": "shisaku",
+      "meaning": "policy / measure",
+      "part_of_speech": "noun",
+      "topic": ["business", "society"]
+    },
+    {
+      "id": "v034",
+      "level": "N2",
+      "word": "概念",
+      "furigana": "がいねん",
+      "romaji": "gainen",
+      "meaning": "concept / notion",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v035",
+      "level": "N2",
+      "word": "把握する",
+      "furigana": "はあくする",
+      "romaji": "haaku suru",
+      "meaning": "to grasp / understand fully",
+      "part_of_speech": "verb",
+      "topic": ["business", "general"]
+    },
+    {
+      "id": "v036",
+      "level": "N2",
+      "word": "優先する",
+      "furigana": "ゆうせんする",
+      "romaji": "yuusen suru",
+      "meaning": "to prioritize",
+      "part_of_speech": "verb",
+      "topic": ["business", "general"]
+    },
+    {
+      "id": "v037",
+      "level": "N1",
+      "word": "卓越した",
+      "furigana": "たくえつした",
+      "romaji": "takuetsu shita",
+      "meaning": "outstanding / excellent",
+      "part_of_speech": "adjective",
+      "topic": ["descriptions", "general"]
+    },
+    {
+      "id": "v038",
+      "level": "N1",
+      "word": "懸念",
+      "furigana": "けねん",
+      "romaji": "kenen",
+      "meaning": "concern / worry",
+      "part_of_speech": "noun",
+      "topic": ["feelings", "general"]
+    },
+    {
+      "id": "v039",
+      "level": "N1",
+      "word": "顕著な",
+      "furigana": "けんちょな",
+      "romaji": "kencho na",
+      "meaning": "remarkable / notable",
+      "part_of_speech": "adjective",
+      "topic": ["descriptions", "general"]
+    },
+    {
+      "id": "v040",
+      "level": "N5",
+      "word": "映画",
+      "furigana": "えいが",
+      "romaji": "eiga",
+      "meaning": "movie / film",
+      "part_of_speech": "noun",
+      "topic": ["entertainment", "general"]
+    },
+    {
+      "id": "v041",
+      "level": "N5",
+      "word": "音楽",
+      "furigana": "おんがく",
+      "romaji": "ongaku",
+      "meaning": "music",
+      "part_of_speech": "noun",
+      "topic": ["entertainment", "general"]
+    },
+    {
+      "id": "v042",
+      "level": "N5",
+      "word": "話す",
+      "furigana": "はなす",
+      "romaji": "hanasu",
+      "meaning": "to speak / talk",
+      "part_of_speech": "verb",
+      "topic": ["communication", "general"]
+    },
+    {
+      "id": "v043",
+      "level": "N5",
+      "word": "公園",
+      "furigana": "こうえん",
+      "romaji": "kouen",
+      "meaning": "park",
+      "part_of_speech": "noun",
+      "topic": ["places", "general"]
+    },
+    {
+      "id": "v044",
+      "level": "N4",
+      "word": "趣味",
+      "furigana": "しゅみ",
+      "romaji": "shumi",
+      "meaning": "hobby / interest",
+      "part_of_speech": "noun",
+      "topic": ["general"]
+    },
+    {
+      "id": "v045",
+      "level": "N3",
+      "word": "印象",
+      "furigana": "いんしょう",
+      "romaji": "inshou",
+      "meaning": "impression",
+      "part_of_speech": "noun",
+      "topic": ["feelings", "general"]
+    }
+  ]
+}

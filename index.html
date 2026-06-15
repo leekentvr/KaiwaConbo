@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>日本語ドリル — Japanese Speaking Drill</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Noto+Sans+JP:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body class="light">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-kanji">語</span>
+        <div class="brand-text">
+          <span class="brand-title">日本語ドリル</span>
+          <span class="brand-sub">Japanese Speaking Drill</span>
+        </div>
+      </div>
+      <div class="header-controls">
+        <button id="btn-dark-mode" class="icon-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
+          <span class="icon-sun">☀</span>
+          <span class="icon-moon">☽</span>
+        </button>
+        <button id="btn-import" class="icon-btn" title="Import custom word list" aria-label="Import custom word list">⊕</button>
+        <input type="file" id="file-import" accept=".json" style="display:none" multiple />
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== SETUP PANEL ===================== -->
+  <section class="setup-panel" id="setup-panel">
+    <div class="setup-inner">
+
+      <!-- JLPT Level Selection -->
+      <div class="setup-group">
+        <label class="setup-label">JLPT Levels</label>
+        <div class="level-chips" role="group" aria-label="JLPT level selection">
+          <button class="level-chip active" data-level="N5" aria-pressed="true">N5</button>
+          <button class="level-chip active" data-level="N4" aria-pressed="true">N4</button>
+          <button class="level-chip" data-level="N3" aria-pressed="false">N3</button>
+          <button class="level-chip" data-level="N2" aria-pressed="false">N2</button>
+          <button class="level-chip" data-level="N1" aria-pressed="false">N1</button>
+        </div>
+      </div>
+
+      <!-- Topic Filter -->
+      <div class="setup-group">
+        <label class="setup-label">Topic Filter</label>
+        <div class="topic-chips" role="group" aria-label="Topic filter">
+          <button class="topic-chip active" data-topic="all" aria-pressed="true">All</button>
+          <button class="topic-chip" data-topic="food" aria-pressed="false">🍱 Food</button>
+          <button class="topic-chip" data-topic="travel" aria-pressed="false">✈ Travel</button>
+          <button class="topic-chip" data-topic="school" aria-pressed="false">📚 School</button>
+          <button class="topic-chip" data-topic="business" aria-pressed="false">💼 Business</button>
+          <button class="topic-chip" data-topic="feelings" aria-pressed="false">💭 Feelings</button>
+          <button class="topic-chip" data-topic="general" aria-pressed="false">🌐 General</button>
+        </div>
+      </div>
+
+      <!-- Options Row -->
+      <div class="setup-options">
+        <label class="toggle-label">
+          <input type="checkbox" id="toggle-furigana" checked />
+          <span class="toggle-switch"></span>
+          Show furigana
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="toggle-romaji" />
+          <span class="toggle-switch"></span>
+          Show romaji
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" id="toggle-challenge" />
+          <span class="toggle-switch"></span>
+          Challenge mode
+        </label>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================== STATS BAR ===================== -->
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat-item">
+        <span class="stat-num" id="stat-grammar-used">0</span>
+        <span class="stat-lbl">grammar used</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-vocab-used">0</span>
+        <span class="stat-lbl">vocab used</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-total">0</span>
+        <span class="stat-lbl">total cards</span>
+      </div>
+      <div class="stats-actions">
+        <button id="btn-shuffle" class="action-btn secondary">⇄ Shuffle All</button>
+        <button id="btn-reset" class="action-btn danger">↺ Reset Session</button>
+        <button id="btn-export" class="action-btn secondary">↓ Export List</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CHALLENGE BANNER ===================== -->
+  <div class="challenge-banner hidden" id="challenge-banner">
+    <div class="challenge-inner">
+      <span class="challenge-label">⚡ Challenge</span>
+      <span id="challenge-text" class="challenge-text"></span>
+      <button id="btn-new-challenge" class="challenge-refresh">new challenge</button>
+    </div>
+  </div>
+
+  <!-- ===================== MAIN GAME AREA ===================== -->
+  <main class="game-area">
+
+    <!-- Grammar Section -->
+    <section class="card-section" id="section-grammar">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-badge grammar-badge">文法</span>
+          Grammar
+        </h2>
+        <span class="pool-indicator" id="grammar-pool-indicator">— / —</span>
+      </div>
+      <div class="cards-grid" id="grammar-grid" role="list" aria-label="Grammar cards">
+        <!-- Cards injected by JS -->
+      </div>
+    </section>
+
+    <!-- Vocabulary Section -->
+    <section class="card-section" id="section-vocab">
+      <div class="section-header">
+        <h2 class="section-title">
+          <span class="section-badge vocab-badge">語彙</span>
+          Vocabulary
+        </h2>
+        <span class="pool-indicator" id="vocab-pool-indicator">— / —</span>
+      </div>
+      <div class="cards-grid" id="vocab-grid" role="list" aria-label="Vocabulary cards">
+        <!-- Cards injected by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== EMPTY STATE ===================== -->
+  <div class="empty-state hidden" id="empty-state">
+    <div class="empty-kanji">空</div>
+    <p class="empty-title">No cards available</p>
+    <p class="empty-msg">Select at least one JLPT level, then hit Shuffle or Reset to load cards.</p>
+  </div>
+
+  <!-- ===================== TOAST ===================== -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <!-- ===================== IMPORT MODAL ===================== -->
+  <div class="modal-overlay hidden" id="import-modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Import word list">
+      <div class="modal-header">
+        <h3>Import Custom JSON</h3>
+        <button class="modal-close" id="btn-modal-close" aria-label="Close modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Upload a <code>grammar.json</code> or <code>vocabulary.json</code> file. Custom entries are added to the active pool.</p>
+        <div class="drop-zone" id="drop-zone">
+          <p>Drop JSON file here or <button class="link-btn" id="btn-browse">browse</button></p>
+        </div>
+        <div id="import-feedback" class="import-feedback"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js" type="module"></script>
+</body>
+</html>
