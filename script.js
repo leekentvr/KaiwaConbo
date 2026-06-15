@@ -1,6 +1,6 @@
 /**
- * 日本語ドリル — script.js
- * Japanese Speaking Drill Game
+ * 日本語 — script.js
+ * Japanese Speaking Game
  *
  * Architecture:
  *   DataStore   — loads and filters JSON data
