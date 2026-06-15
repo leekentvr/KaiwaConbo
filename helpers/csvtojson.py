@@ -9,6 +9,14 @@ import os
 # Full JLPT Vocab lists from here
 # https://github.com/Bluskyo/JLPT_Vocabulary
 
+# Quick local server test 
+# python -m http.server 8000
+# then open http://localhost:8000
+
+# Grammar from here
+# https://www.reddit.com/r/LearnJapanese/comments/1cwhwd8/a_handy_spreadsheet_of_over_800_jlpt_grammar/
+# https://docs.google.com/spreadsheets/d/1YIVReazodB7Z1WTZ3mnLAszpFO-2WmmI/edit?usp=sharing&ouid=112139772527751582321&rtpof=true&sd=true
+
 # ============================================================
 #  LOAD Yomitan DICTIONARY (JMdict English, v3 format)
 # ============================================================

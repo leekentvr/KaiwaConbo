@@ -1,989 +1,696 @@
 /**
  * 日本語 — script.js
- * Japanese Speaking Game
- *
- * Architecture:
- *   DataStore   — loads and filters JSON data
- *   CardPool    — shuffled pool with no-repeat logic
- *   CardManager — renders and replaces cards in the DOM
- *   UI          — handles all user interactions & settings
- *   App         — bootstraps everything
+ * In-Place Replacing Modular Japanese Vocabulary/Grammar Engine
  */
 
 'use strict';
 
-/* =========================================================
-   1. CONSTANTS & CONFIG
-   ========================================================= */
-
-const GRAMMAR_JSON_PATH  = './grammar.json';
+const GRAMMAR_JSON_PATH = './grammar.json';
 const VOCABULARY_JSON_PATH = './vocabulary.json';
-const CARDS_PER_SECTION  = 3;
-
-const CHALLENGES = [
-  'Use 2 grammar cards and 3 vocabulary cards in one sentence.',
-  'Make a question using one of the grammar cards.',
-  'Use the past tense (〜た form) in your sentence.',
-  'Use polite form (ます/です) only.',
-  'Make a negative sentence.',
-  'Combine two vocabulary cards in a single phrase.',
-  'Use a grammar card twice in different sentences.',
-  'Speak for at least 30 seconds using these cards.',
-  'Make a sentence about your weekend plans.',
-  'Describe someone in the room using the visible cards.',
-  'Use all 3 vocabulary cards in one long sentence.',
-  'Make a question and answer it yourself.',
-  'Use the て-form to connect two ideas.',
-  'Tell a short story (3 sentences) using any card.',
-  'Use conditional form (〜ば / 〜たら) in your sentence.',
-];
-
-const STORAGE_KEY = 'jpDrill_settings';
 
 /* =========================================================
-   2. DATA STORE
-   Loads grammar and vocabulary from JSON files (or custom
-   imports), filters by selected JLPT levels and topics.
+   1. STORAGE & CONFIGURATION MANAGER
    ========================================================= */
-
-class DataStore {
+class ConfigManager {
   constructor() {
-    /** @type {Array<Object>} All grammar entries (base + imported) */
-    this.allGrammar = [];
-    /** @type {Array<Object>} All vocabulary entries (base + imported) */
-    this.allVocab   = [];
+    this.storageKey = 'jpDrill_clean_settings';
+    this.settings = {
+      levels: [],
+      topics: ['all'],
+      englishFirst: false,
+      showEnglish: false,
+      showFurigana: true,
+      showRomaji: false,
+      showExamples: true,
+      vocabLimit: 3,
+      grammarLimit: 3,
+      darkMode: false
+    };
+    this.load();
   }
 
-  /**
-   * Fetch and parse a JSON file from the given URL.
-   * @param {string} url
-   * @returns {Promise<Object>}
-   */
-  async fetchJSON(url) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-    return res.json();
+  load() {
+    try {
+      const raw = localStorage.getItem(this.storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        this.settings = { ...this.settings, ...parsed };
+      }
+    } catch (e) {
+      console.warn("Configuration baseline fallback triggered:", e);
+    }
   }
 
-  /**
-   * Load base grammar and vocabulary JSON files.
-   */
-  async loadBase() {
+  save() {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.settings));
+    } catch (e) {
+      console.error("Failed to persist user configuration metrics:", e);
+    }
+  }
+}
+
+/* =========================================================
+   2. PROGRESS & MEMORY TRACKING STORAGE
+   ========================================================= */
+class ProgressManager {
+  constructor() {
+    this.seenKey = 'jpDrill_seen_cards_clean';
+    this.seenIds = new Set(this._loadFromStorage(this.seenKey));
+  }
+
+  _loadFromStorage(key) {
+    try {
+      const data = localStorage.getItem(key);
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  _saveToStorage(key, setInstance) {
+    try {
+      localStorage.setItem(key, JSON.stringify([...setInstance]));
+    } catch (e) {
+      console.error(`Error saving progress token for key: ${key}`, e);
+    }
+  }
+
+  markSeen(id) {
+    this.seenIds.add(id);
+    this._saveToStorage(this.seenKey, this.seenIds);
+  }
+
+  isSeen(id) {
+    return this.seenIds.has(id);
+  }
+
+  resetProgress() {
+    this.seenIds.clear();
+    this._saveToStorage(this.seenKey, this.seenIds);
+  }
+}
+
+/* =========================================================
+   3. DATA INGESTION & AUTOMATIC FILTER EXTRACTOR
+   ========================================================= */
+class DataManager {
+  constructor() {
+    this.grammar = [];
+    this.vocabulary = [];
+    this.dynamicLevels = [];
+    this.dynamicTopics = [];
+  }
+
+  async fetchPayloads() {
+    const fetchJSON = async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Network fault loading asset file: ${url}`);
+      return res.json();
+    };
+
     const [gData, vData] = await Promise.all([
-      this.fetchJSON(GRAMMAR_JSON_PATH),
-      this.fetchJSON(VOCABULARY_JSON_PATH),
+      fetchJSON(GRAMMAR_JSON_PATH).catch(() => ({ grammar: [] })),
+      fetchJSON(VOCABULARY_JSON_PATH).catch(() => ({ vocabulary: [] }))
     ]);
-    this.allGrammar = gData.grammar || [];
-    this.allVocab   = vData.vocabulary || [];
+
+    this.grammar = gData.grammar || [];
+    this.vocabulary = vData.vocabulary || [];
+
+    this._extractDynamicFilters();
   }
 
-  /**
-   * Merge a custom-imported JSON object into the data store.
-   * Accepts both grammar.json and vocabulary.json shapes.
-   * @param {Object} json
-   * @returns {{ added: number, type: string }}
-   */
-  importCustom(json) {
-    if (Array.isArray(json.grammar)) {
-      // Assign temporary IDs if missing
-      json.grammar.forEach((g, i) => {
-        if (!g.id) g.id = `custom-g-${Date.now()}-${i}`;
-        g._custom = true;
-      });
-      this.allGrammar.push(...json.grammar);
-      return { added: json.grammar.length, type: 'grammar' };
-    }
-    if (Array.isArray(json.vocabulary)) {
-      json.vocabulary.forEach((v, i) => {
-        if (!v.id) v.id = `custom-v-${Date.now()}-${i}`;
-        v._custom = true;
-      });
-      this.allVocab.push(...json.vocabulary);
-      return { added: json.vocabulary.length, type: 'vocabulary' };
-    }
-    throw new Error('Unrecognised JSON shape. Expected { grammar: [...] } or { vocabulary: [...] }.');
+  _extractDynamicFilters() {
+    const levelsSet = new Set();
+    const topicsSet = new Set();
+
+    this.grammar.forEach(g => { if (g.level) levelsSet.add(g.level.toUpperCase()); });
+    this.vocabulary.forEach(v => {
+      if (v.level) levelsSet.add(v.level.toUpperCase());
+      if (Array.isArray(v.topic)) {
+        v.topic.forEach(t => { if (t) topicsSet.add(t.toLowerCase()); });
+      } else if (typeof v.topic === 'string' && v.topic) {
+        topicsSet.add(v.topic.toLowerCase());
+      }
+    });
+
+    const standardOrder = ['N5', 'N4', 'N3', 'N2', 'N1'];
+    this.dynamicLevels = [...levelsSet].sort((a, b) => {
+      const idxA = standardOrder.indexOf(a);
+      const idxB = standardOrder.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      return a.localeCompare(b);
+    });
+
+    this.dynamicTopics = [...topicsSet].sort();
   }
 
-  /**
-   * Filter grammar entries by active JLPT levels and topic.
-   * @param {string[]} levels  e.g. ['N5', 'N4']
-   * @param {string}   topic   e.g. 'food' or 'all'
-   * @returns {Array<Object>}
-   */
-	filteredGrammar(levels) {
-	  return this.allGrammar.filter(g => {
-		return levels.includes(g.level);
-	  });
-	}
-  /**
-   * Filter vocabulary entries by active JLPT levels and topic.
-   * @param {string[]} levels
-   * @param {string}   topic
-   * @returns {Array<Object>}
-   */
-  filteredVocab(levels, topic) {
-    return this.allVocab.filter(v => {
-      const levelOk = levels.includes(v.level);
-      const topicOk = topic === 'all' || (Array.isArray(v.topic) && v.topic.includes(topic));
-      return levelOk && topicOk;
+  getFilteredPool(type, config, progress) {
+    const rawSrc = type === 'grammar' ? this.grammar : this.vocabulary;
+
+    return rawSrc.filter(item => {
+		// FIX: If no levels selected, allow everything
+		if (config.levels.length === 0) {
+		  return true;
+		}
+
+		if (!config.levels.includes(item.level?.toUpperCase())) {
+		  return false;
+		}
+
+      if (type === 'vocab' && !config.topics.includes('all')) {
+        const itemTopics = Array.isArray(item.topic) 
+          ? item.topic.map(t => t.toLowerCase()) 
+          : [item.topic?.toLowerCase()];
+        const matchedTopic = config.topics.some(t => itemTopics.includes(t));
+        if (!matchedTopic) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      const aSeen = progress.isSeen(a.id) ? 1 : 0;
+      const bSeen = progress.isSeen(b.id) ? 1 : 0;
+      if (aSeen !== bSeen) return aSeen - bSeen;
+      return Math.random() - 0.5;
     });
   }
 }
 
 /* =========================================================
-   3. CARD POOL
-   Manages a shuffled pool for one content type so cards
-   don't repeat until all have been used once.
+   4. CARD COMPONENT (SUPPORTS IN-PLACE REPLACEMENT)
    ========================================================= */
-
-class CardPool {
-  /**
-   * @param {Array<Object>} items — full filtered dataset
-   */
-  constructor(items) {
-    this._all      = [...items];
-    this._remaining = [];
-    this._used     = 0;
-    this._replenish();
+class CardComponent {
+  constructor(data, type, configManager, progressManager, onMarkCleared) {
+    this.data = data;
+    this.type = type;
+    this.configManager = configManager;
+    this.progressManager = progressManager;
+    this.onMarkCleared = onMarkCleared;
+    
+    this.domElement = null;
+    this.isExiting = false;
   }
 
-  get totalUsed()  { return this._used; }
-  get poolSize()   { return this._all.length; }
-  get remaining()  { return this._remaining.length; }
-
-  /** Fisher-Yates shuffle in place */
-  _shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  /** Refill the remaining pile with a new shuffle */
-  _replenish() {
-    this._remaining = this._shuffle([...this._all]);
-  }
-
-  /**
-   * Draw the next item from the pool.
-   * Replenishes automatically when exhausted.
-   * @returns {Object|null}
-   */
-  draw() {
-    if (this._all.length === 0) return null;
-    if (this._remaining.length === 0) this._replenish();
-    this._used++;
-    return this._remaining.pop();
-  }
-
-  /** Reset usage count without changing the data set */
-  reset() {
-    this._used = 0;
-    this._replenish();
-  }
-
-  /** Replace the underlying data (e.g. after filter change) */
-  updateItems(items) {
-    this._all       = [...items];
-    this._used      = 0;
-    this._remaining = [];
-    this._replenish();
-  }
-}
-
-/* =========================================================
-   4. CARD MANAGER
-   Renders cards into DOM grids and handles the
-   click-to-replace mechanic with animations.
-   ========================================================= */
-
-class CardManager {
-  /**
-   * @param {HTMLElement}  gridEl   — the .cards-grid DOM node
-   * @param {CardPool}     pool     — the data pool to draw from
-   * @param {'grammar'|'vocab'} type
-   * @param {Object}       settings — { showFurigana, showRomaji }
-   * @param {Function}     onUse    — callback(cardData) after a card is used
-   */
-  constructor(gridEl, pool, type, settings, onUse) {
-    this.grid     = gridEl;
-    this.pool     = pool;
-    this.type     = type;
-    this.settings = settings;
-    this.onUse    = onUse;
-
-    /** Currently displayed card data, keyed by slot index */
-    this.slots = {};
-  }
-
-  /** Build and display all CARDS_PER_SECTION cards */
-  init() {
-    this.grid.innerHTML = '';
-    for (let i = 0; i < CARDS_PER_SECTION; i++) {
-      this._addSlot(i);
-    }
-  }
-
-  /** Create a card element for a given slot */
-  _addSlot(index) {
-    const data = this.pool.draw();
-    if (!data) return;
-    this.slots[index] = data;
-
-    const card = this._buildCard(data, index);
-    card.classList.add('entering');
-    this.grid.appendChild(card);
-
-    // Remove animation class after it completes
-    card.addEventListener('animationend', () => card.classList.remove('entering'), { once: true });
-  }
-
-  /**
-   * Build the card DOM element.
-   * @param {Object} data
-   * @param {number} index
-   * @returns {HTMLElement}
-   */
-  _buildCard(data, index) {
+  render() {
     const card = document.createElement('div');
-    card.className = `card ${this.type}-card`;
+    card.className = `static-drill-card ${this.type}-card`;
     card.setAttribute('role', 'listitem');
     card.setAttribute('tabindex', '0');
-    card.dataset.slot  = index;
-    card.dataset.id    = data.id;
+    card.setAttribute('title', 'Click card to remove it and load a new one');
 
-    // Accessibility label
-    const label = this.type === 'grammar'
-      ? `Grammar: ${data.pattern}, meaning: ${data.meaning}`
-      : `Vocabulary: ${data.word}, ${data.furigana}, meaning: ${data.meaning}`;
-    card.setAttribute('aria-label', label);
+    this.domElement = card;
+    this.syncCardContentDisplay();
 
-    card.innerHTML = this._cardHTML(data);
+    const triggerCardEviction = () => {
+      if (this.isExiting) return;
+      this.isExiting = true;
+      
+      this.progressManager.markSeen(this.data.id);
+      this.domElement.classList.add('exiting');
+      
+      this.domElement.addEventListener('animationend', () => {
+        this.onMarkCleared(this);
+      }, { once: true });
+    };
 
-    // Apply furigana / romaji visibility
-    this._applyVisibility(card);
-
-    // Click and keyboard handler
-    const handler = () => this._useCard(card, index);
-    card.addEventListener('click', handler);
+    card.addEventListener('click', triggerCardEviction);
     card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        triggerCardEviction();
+      }
     });
 
     return card;
   }
 
-  /**
-   * Generate inner HTML for a card based on its type.
-   * @param {Object} data
-   * @returns {string}
-   */
-  _cardHTML(data) {
-    if (this.type === 'grammar') {
-      return `
-        <div class="card-strip"></div>
-        <div class="card-body">
-          <span class="card-level">${data.level}</span>
-          <div class="card-pattern">${this._escHtml(data.pattern)}</div>
-          <div class="card-romaji">${this._escHtml(data.romaji || '')}</div>
-          <div class="card-meaning">${this._escHtml(data.meaning)}</div>
-          ${data.example ? `
-          <div class="card-example">
-            <div class="card-example-jp">${this._escHtml(data.example)}</div>
-            ${data.example_en ? `<div class="card-example-en">${this._escHtml(data.example_en)}</div>` : ''}
-          </div>` : ''}
-        </div>`;
+  syncCardContentDisplay() {
+    if (!this.domElement) return;
+
+    const config = this.configManager.settings;
+    const item = this.data;
+    
+    this.domElement.innerHTML = '';
+
+    const strip = document.createElement('div');
+    strip.className = 'card-strip';
+    this.domElement.appendChild(strip);
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'card-header-row';
+    headerRow.innerHTML = `<span class="card-level">${item.level || 'N/A'}</span><span class="card-hint-text">Click to Clear</span>`;
+    body.appendChild(headerRow);
+
+    const mainContentArea = document.createElement('div');
+    mainContentArea.className = 'card-main-content-area';
+
+    if (config.englishFirst) {
+      // Swapped Mode: Meaning takes prominence at the top tier
+      const primaryEn = document.createElement('div');
+      primaryEn.className = 'card-meaning primary-display';
+      primaryEn.textContent = item.meaning;
+      mainContentArea.appendChild(primaryEn);
+
+      // Japanese is downgraded to the lower conditional block
+      if (config.showEnglish) {
+        const secondaryJp = document.createElement('div');
+        secondaryJp.className = 'jp-content-wrapper faded-sub-content';
+        this._appendJapaneseFields(secondaryJp, item, config);
+        mainContentArea.appendChild(secondaryJp);
+      }
+    } else {
+      // Standard Mode: Japanese defaults to the absolute top tier
+      const primaryJp = document.createElement('div');
+      primaryJp.className = 'jp-content-wrapper primary-display';
+      this._appendJapaneseFields(primaryJp, item, config);
+      mainContentArea.appendChild(primaryJp);
+
+      // Meaning is downgraded to the lower conditional block
+      if (config.showEnglish) {
+        const secondaryEn = document.createElement('div');
+        secondaryEn.className = 'en-content-wrapper faded-sub-content';
+        
+        const meaningEl = document.createElement('div');
+        meaningEl.className = 'card-meaning';
+        meaningEl.textContent = item.meaning;
+        secondaryEn.appendChild(meaningEl);
+        
+        mainContentArea.appendChild(secondaryEn);
+      }
     }
 
-    // Vocabulary card
-    const posClass = this._posClass(data.part_of_speech);
-    return `
-      <div class="card-strip"></div>
-      <div class="card-body">
-        <span class="card-level">${data.level}</span>
-        <div class="card-furigana">${this._escHtml(data.furigana || '')}</div>
-        <div class="card-word">${this._escHtml(data.word)}</div>
-        <div class="card-romaji">${this._escHtml(data.romaji || '')}</div>
-        <div class="card-meaning">${this._escHtml(data.meaning)}</div>
-        ${data.part_of_speech ? `<span class="card-pos ${posClass}">${this._escHtml(data.part_of_speech)}</span>` : ''}
-      </div>`;
+    body.appendChild(mainContentArea);
+
+    // Contextual Examples
+    const exBox = document.createElement('div');
+    exBox.className = `card-example-wrapper ${config.showExamples && item.example ? '' : 'hidden'}`;
+    exBox.innerHTML = `
+      <div class="card-example-jp">${item.example || ''}</div>
+      <div class="card-example-en">${item.example_en || ''}</div>
+    `;
+    body.appendChild(exBox);
+
+    this.domElement.appendChild(body);
   }
 
-  /**
-   * Return a CSS class name for a given part of speech.
-   * @param {string} pos
-   * @returns {string}
-   */
-  _posClass(pos) {
-    if (!pos) return 'pos-other';
-    const p = pos.toLowerCase();
-    if (p.includes('verb'))      return 'pos-verb';
-    if (p.includes('noun'))      return 'pos-noun';
-    if (p.includes('adjective')) return 'pos-adjective';
-    return 'pos-other';
-  }
+  _appendJapaneseFields(container, item, config) {
+    if (this.type === 'grammar') {
+      const patternEl = document.createElement('div');
+      patternEl.className = 'card-pattern';
+      patternEl.textContent = item.pattern;
+      container.appendChild(patternEl);
+    } else {
+      const furiEl = document.createElement('div');
+      furiEl.className = `card-furigana ${config.showFurigana ? '' : 'v-hidden'}`;
+      furiEl.textContent = item.furigana || ' ';
+      container.appendChild(furiEl);
 
-  /** Escape HTML special chars */
-  _escHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
+      const wordEl = document.createElement('div');
+      wordEl.className = 'card-word';
+      wordEl.textContent = item.word;
+      container.appendChild(wordEl);
+    }
 
-  /**
-   * Handle a card being used:
-   * 1. Animate exit
-   * 2. Report usage
-   * 3. Draw new card and animate entry
-   * @param {HTMLElement} card
-   * @param {number}      index
-   */
-  _useCard(card, index) {
-    const usedData = this.slots[index];
+    const romajiEl = document.createElement('div');
+    romajiEl.className = `card-romaji ${config.showRomaji ? '' : 'hidden'}`;
+    romajiEl.textContent = item.romaji || '';
+    container.appendChild(romajiEl);
 
-    // Animate out
-    card.classList.add('exiting');
-    card.removeEventListener('click', card._clickHandler);
-
-    card.addEventListener('animationend', () => {
-      // Remove old card
-      card.remove();
-
-      // Draw new card
-      const newData = this.pool.draw();
-      if (!newData) return;
-
-      this.slots[index] = newData;
-      const newCard = this._buildCard(newData, index);
-      newCard.classList.add('entering');
-
-      // Insert in correct position
-      const cards = this.grid.querySelectorAll('.card');
-      if (index < cards.length) {
-        this.grid.insertBefore(newCard, cards[index]);
-      } else {
-        this.grid.appendChild(newCard);
-      }
-
-      newCard.addEventListener('animationend', () => newCard.classList.remove('entering'), { once: true });
-    }, { once: true });
-
-    // Callback to parent (for stat tracking)
-    if (this.onUse) this.onUse(usedData);
-  }
-
-  /**
-   * Apply or remove furigana/romaji visibility classes from
-   * all cards (called when settings change mid-session).
-   */
-  applyVisibilityToAll() {
-    const cards = this.grid.querySelectorAll('.card');
-    cards.forEach(card => this._applyVisibility(card));
-  }
-
-  /**
-   * @param {HTMLElement} card
-   */
-	_applyVisibility(card) {
-	  card.classList.toggle('furigana-hidden', !this.settings.showFurigana);
-	  card.classList.toggle('romaji-hidden', !this.settings.showRomaji);
-	  card.classList.toggle('examples-hidden', !this.settings.showExamples);
-	}
-
-  /** Replace all current cards with new draws (shuffle effect) */
-  shuffleAll() {
-    const cards = Array.from(this.grid.querySelectorAll('.card'));
-    cards.forEach((card, i) => {
-      // Stagger exits
-      setTimeout(() => {
-        card.classList.add('exiting');
-        card.addEventListener('animationend', () => {
-          card.remove();
-          const newData = this.pool.draw();
-          if (!newData) return;
-          this.slots[i] = newData;
-          const newCard = this._buildCard(newData, i);
-          newCard.classList.add('entering');
-          this.grid.appendChild(newCard);
-          newCard.addEventListener('animationend', () => newCard.classList.remove('entering'), { once: true });
-        }, { once: true });
-      }, i * 60);
-    });
+    if (item.part_of_speech && this.type === 'vocab') {
+      const posEl = document.createElement('span');
+      posEl.className = 'card-pos-tag';
+      posEl.textContent = item.part_of_speech;
+      container.appendChild(posEl);
+    }
   }
 }
 
 /* =========================================================
-   5. UI CONTROLLER
-   Binds DOM events, manages settings, coordinates updates.
+   5. CENTRAL APPLICATION COORDINATOR (APP CORE)
    ========================================================= */
+class App {
+  constructor() {
+    this.configManager = new ConfigManager();
+    this.progressManager = new ProgressManager();
+    this.dataManager = new DataManager();
 
-class UI {
-  constructor(app) {
-    this.app = app;
+    this.activeCards = { grammar: [], vocab: [] };
+    this.sessionClearedCount = { grammar: 0, vocab: 0 };
 
-    // ── Setup controls ──────────────────────────────────
-    this.$levelChips    = document.querySelectorAll('.level-chip');
-    this.$topicChips    = document.querySelectorAll('.topic-chip');
-    this.$toggleFuri    = document.getElementById('toggle-furigana');
-    this.$toggleRomaji  = document.getElementById('toggle-romaji');
-    this.$toggleChallenge = document.getElementById('toggle-challenge');
-	this.$toggleExamples = document.getElementById('toggle-examples');
-
-    // ── Stats ────────────────────────────────────────────
-    this.$statGrammar   = document.getElementById('stat-grammar-used');
-    this.$statVocab     = document.getElementById('stat-vocab-used');
-    this.$statTotal     = document.getElementById('stat-total');
-    this.$grammarPool   = document.getElementById('grammar-pool-indicator');
-    this.$vocabPool     = document.getElementById('vocab-pool-indicator');
-
-    // ── Action buttons ───────────────────────────────────
-    this.$btnShuffle    = document.getElementById('btn-shuffle');
-    this.$btnReset      = document.getElementById('btn-reset');
-    this.$btnDark       = document.getElementById('btn-dark-mode');
-    this.$btnImport     = document.getElementById('btn-import');
-    this.$fileImport    = document.getElementById('file-import');
-    this.$btnExport     = document.getElementById('btn-export');
-
-    // ── Challenge ────────────────────────────────────────
-    this.$challengeBanner = document.getElementById('challenge-banner');
-    this.$challengeText   = document.getElementById('challenge-text');
-    this.$btnNewChallenge = document.getElementById('btn-new-challenge');
-
-    // ── Import modal ─────────────────────────────────────
-    this.$importModal   = document.getElementById('import-modal');
-    this.$btnModalClose = document.getElementById('btn-modal-close');
-    this.$dropZone      = document.getElementById('drop-zone');
-    this.$btnBrowse     = document.getElementById('btn-browse');
-    this.$importFeedback = document.getElementById('import-feedback');
-
-    // ── Toast ─────────────────────────────────────────────
-    this.$toastContainer = document.getElementById('toast-container');
+    this.cacheDOM();
   }
 
-  /**
-   * Attach all event listeners.
-   * Called once during App.init().
-   */
-  bindAll() {
-    // Level chips — multi-select toggle
-    this.$levelChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        chip.classList.toggle('active');
-        chip.setAttribute('aria-pressed', chip.classList.contains('active') ? 'true' : 'false');
-        this.app.onFilterChange();
+  cacheDOM() {
+    this.$levelContainer = document.getElementById('level-chips-container');
+    this.$topicContainer = document.getElementById('topic-chips-container');
+    
+    this.$toggleEnglishFirst = document.getElementById('toggle-english-first');
+    this.$toggleEnglish = document.getElementById('toggle-english');
+    this.$toggleFurigana = document.getElementById('toggle-furigana');
+    this.$toggleRomaji = document.getElementById('toggle-romaji');
+    this.$toggleExamples = document.getElementById('toggle-examples');
+
+    this.$inputVocabCount = document.getElementById('input-vocab-count');
+    this.$inputGrammarCount = document.getElementById('input-grammar-count');
+
+    this.$statGrammar = document.getElementById('stat-grammar-used');
+    this.$statVocab = document.getElementById('stat-vocab-used');
+    this.$statTotal = document.getElementById('stat-total');
+
+    this.$grammarPoolInd = document.getElementById('grammar-pool-indicator');
+    this.$vocabPoolInd = document.getElementById('vocab-pool-indicator');
+
+    this.$btnShuffle = document.getElementById('btn-shuffle');
+    this.$btnReset = document.getElementById('btn-reset');
+    this.$btnResetProgress = document.getElementById('btn-reset-progress');
+    this.$btnDarkMode = document.getElementById('btn-dark-mode');
+
+    this.$grammarGrid = document.getElementById('grammar-grid');
+    this.$vocabGrid = document.getElementById('vocab-grid');
+    this.$emptyState = document.getElementById('empty-state');
+    this.$mainContainers = document.getElementById('main-game-containers');
+  }
+
+  async run() {
+    await this.dataManager.fetchPayloads();
+	
+    // FIX: Auto-repair corrupted or empty level settings
+	if (!Array.isArray(this.configManager.settings.levels) ||
+		this.configManager.settings.levels.length === 0) {
+	  this.configManager.settings.levels = [...this.dataManager.dynamicLevels];
+	  this.configManager.save();
+	}
+	
+    this.initializeFilterDefaults();
+    this.syncUIControlsWithState();
+    this.renderDynamicFilterUI();
+    this.attachDOMEventListeners();
+    
+    this.rebuildBoard();
+  }
+
+  initializeFilterDefaults() {
+    const config = this.configManager.settings;
+    if (config.levels.length === 0) {
+      config.levels = [...this.dataManager.dynamicLevels];
+    }
+    this.configManager.save();
+  }
+
+  syncUIControlsWithState() {
+    const config = this.configManager.settings;
+    
+    this.$toggleEnglishFirst.checked = config.englishFirst;
+    this.$toggleEnglish.checked = config.showEnglish;
+    this.$toggleFurigana.checked = config.showFurigana;
+    this.$toggleRomaji.checked = config.showRomaji;
+    this.$toggleExamples.checked = config.showExamples;
+
+    this.$inputVocabCount.value = config.vocabLimit;
+    this.$inputGrammarCount.value = config.grammarLimit;
+
+    document.body.className = config.darkMode ? 'dark' : 'light';
+  }
+
+  renderDynamicFilterUI() {
+    const config = this.configManager.settings;
+
+    this.$levelContainer.innerHTML = '';
+    this.dataManager.dynamicLevels.forEach(lvl => {
+      const btn = document.createElement('button');
+      const isActive = config.levels.includes(lvl);
+      btn.className = `level-chip ${isActive ? 'active' : ''}`;
+      btn.textContent = lvl;
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        const active = btn.classList.contains('active');
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        
+        if (active) {
+          config.levels.push(lvl);
+        } else {
+          config.levels = config.levels.filter(item => item !== lvl);
+        }
+        this.configManager.save();
+        this.rebuildBoard();
       });
+      this.$levelContainer.appendChild(btn);
     });
 
-    // Topic chips — single-select
-    this.$topicChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        this.$topicChips.forEach(c => { c.classList.remove('active'); c.setAttribute('aria-pressed', 'false'); });
-        chip.classList.add('active');
-        chip.setAttribute('aria-pressed', 'true');
-        this.app.onFilterChange();
+    this.$topicContainer.innerHTML = '';
+    const baseBtn = document.createElement('button');
+    const isAllActive = config.topics.includes('all');
+    baseBtn.className = `topic-chip ${isAllActive ? 'active' : ''}`;
+    baseBtn.textContent = '🌐 All Topics';
+    baseBtn.setAttribute('aria-pressed', isAllActive ? 'true' : 'false');
+    baseBtn.addEventListener('click', () => {
+      document.querySelectorAll('.topic-chip').forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
       });
+      baseBtn.classList.add('active');
+      baseBtn.setAttribute('aria-pressed', 'true');
+      config.topics = ['all'];
+      this.configManager.save();
+      this.rebuildBoard();
+    });
+    this.$topicContainer.appendChild(baseBtn);
+
+    this.dataManager.dynamicTopics.forEach(topic => {
+      const btn = document.createElement('button');
+      const isTopicActive = config.topics.includes(topic);
+      btn.className = `topic-chip ${isTopicActive ? 'active' : ''}`;
+      btn.textContent = topic; 
+      btn.setAttribute('aria-pressed', isTopicActive ? 'true' : 'false');
+      
+      btn.addEventListener('click', () => {
+        baseBtn.classList.remove('active');
+        baseBtn.setAttribute('aria-pressed', 'false');
+        if (config.topics.includes('all')) config.topics = [];
+
+        btn.classList.toggle('active');
+        const active = btn.classList.contains('active');
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+
+        if (active) {
+          if (!config.topics.includes(topic)) config.topics.push(topic);
+        } else {
+          config.topics = config.topics.filter(t => t !== topic);
+        }
+
+        if (config.topics.length === 0) {
+          baseBtn.classList.add('active');
+          baseBtn.setAttribute('aria-pressed', 'true');
+          config.topics = ['all'];
+        }
+        this.configManager.save();
+        this.rebuildBoard();
+      });
+      this.$topicContainer.appendChild(btn);
+    });
+  }
+
+  attachDOMEventListeners() {
+    const config = this.configManager.settings;
+
+    const attachPassiveToggle = ($domElement, configField) => {
+      $domElement.addEventListener('change', (e) => {
+        config[configField] = e.target.checked;
+        this.configManager.save();
+        this.applyPassiveUIUpdatesToExistingCards();
+      });
+    };
+
+    attachPassiveToggle(this.$toggleEnglishFirst, 'englishFirst');
+    attachPassiveToggle(this.$toggleEnglish, 'showEnglish');
+    attachPassiveToggle(this.$toggleFurigana, 'showFurigana');
+    attachPassiveToggle(this.$toggleRomaji, 'showRomaji');
+    attachPassiveToggle(this.$toggleExamples, 'showExamples');
+
+    this.$inputVocabCount.addEventListener('change', (e) => {
+      let val = parseInt(e.target.value, 10) || 3;
+      config.vocabLimit = val < 1 ? 1 : val;
+      this.configManager.save();
+      this.rebuildBoard();
     });
 
-    // Furigana toggle
-    this.$toggleFuri.addEventListener('change', () => {
-      this.app.settings.showFurigana = this.$toggleFuri.checked;
-      this.app.applyVisibility();
-      this.saveSettings();
+    this.$inputGrammarCount.addEventListener('change', (e) => {
+      let val = parseInt(e.target.value, 10) || 3;
+      config.grammarLimit = val < 1 ? 1 : val;
+      this.configManager.save();
+      this.rebuildBoard();
     });
 
-    // Romaji toggle
-    this.$toggleRomaji.addEventListener('change', () => {
-      this.app.settings.showRomaji = this.$toggleRomaji.checked;
-      this.app.applyVisibility();
-      this.saveSettings();
+    this.$btnShuffle.addEventListener('click', () => {
+      this.rebuildBoard();
+      this.showToastNotification('Board shuffled and re-ordered.');
     });
 
-    // Challenge toggle
-    this.$toggleChallenge.addEventListener('change', () => {
-      this.app.settings.challengeMode = this.$toggleChallenge.checked;
-      this.$challengeBanner.classList.toggle('hidden', !this.app.settings.challengeMode);
-      if (this.app.settings.challengeMode) this.refreshChallenge();
-      this.saveSettings();
+    this.$btnReset.addEventListener('click', () => {
+      this.sessionClearedCount = { grammar: 0, vocab: 0 };
+      this.refreshDashboardScoreboard();
+      this.showToastNotification('Session metrics reset.');
     });
 
-    // Shuffle
-    this.$btnShuffle.addEventListener('click', () => this.app.shuffle());
-
-    // Reset
-    this.$btnReset.addEventListener('click', () => this.app.reset());
-
-    // Dark mode
-    this.$btnDark.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-      this.app.settings.darkMode = document.body.classList.contains('dark');
-      this.saveSettings();
-    });
-
-    // Import button
-    this.$btnImport.addEventListener('click', () => this.openImportModal());
-
-    // File input (from browse)
-    this.$fileImport.addEventListener('change', (e) => {
-      const files = Array.from(e.target.files || []);
-      files.forEach(f => this.processImportFile(f));
-      e.target.value = ''; // reset so same file can be re-imported
-    });
-
-    // Export
-    this.$btnExport.addEventListener('click', () => this.app.exportList());
-
-    // Challenge refresh
-    this.$btnNewChallenge.addEventListener('click', () => this.refreshChallenge());
-
-    // Modal close
-    this.$btnModalClose.addEventListener('click', () => this.closeImportModal());
-    this.$importModal.addEventListener('click', (e) => {
-      if (e.target === this.$importModal) this.closeImportModal();
-    });
-
-    // Browse inside modal
-    this.$btnBrowse.addEventListener('click', () => this.$fileImport.click());
-
-    // Drag-and-drop on drop zone
-    this.$dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      this.$dropZone.classList.add('drag-over');
-    });
-    this.$dropZone.addEventListener('dragleave', () => {
-      this.$dropZone.classList.remove('drag-over');
-    });
-    this.$dropZone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      this.$dropZone.classList.remove('drag-over');
-      const files = Array.from(e.dataTransfer.files || []);
-      files.forEach(f => this.processImportFile(f));
-    });
-
-	this.$toggleExamples.addEventListener('change', () => {
-	  this.app.settings.showExamples = this.$toggleExamples.checked;
-	  this.app.applyVisibility();
-	  this.saveSettings();
-	});
-
-    // Keyboard: close modal with Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !this.$importModal.classList.contains('hidden')) {
-        this.closeImportModal();
+    this.$btnResetProgress.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear your persistent historical memory progress?')) {
+        this.progressManager.resetProgress();
+        this.sessionClearedCount = { grammar: 0, vocab: 0 };
+        this.rebuildBoard();
+        this.showToastNotification('Persistent progress storage cleared.');
       }
     });
+
+    this.$btnDarkMode.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      document.body.classList.toggle('light');
+      config.darkMode = document.body.classList.contains('dark');
+      this.configManager.save();
+    });
   }
 
-  // ── Filter state readers ────────────────────────────────
-
-  /** @returns {string[]} Active JLPT levels */
-  getActiveLevels() {
-    return Array.from(this.$levelChips)
-      .filter(c => c.classList.contains('active'))
-      .map(c => c.dataset.level);
+  applyPassiveUIUpdatesToExistingCards() {
+    this.activeCards.grammar.forEach(c => c.syncCardContentDisplay());
+    this.activeCards.vocab.forEach(c => c.syncCardContentDisplay());
   }
 
-  /** @returns {string} Active topic, or 'all' */
-  getActiveTopic() {
-    const active = document.querySelector('.topic-chip.active');
-    return active ? active.dataset.topic : 'all';
+  rebuildBoard() {
+    const config = this.configManager.settings;
+
+    const gSortedPool = this.dataManager.getFilteredPool('grammar', config, this.progressManager);
+    const vSortedPool = this.dataManager.getFilteredPool('vocab', config, this.progressManager);
+
+    const gUnseenTotal = gSortedPool.filter(i => !this.progressManager.isSeen(i.id)).length;
+    const vUnseenTotal = vSortedPool.filter(i => !this.progressManager.isSeen(i.id)).length;
+
+    this.$grammarPoolInd.textContent = `${gUnseenTotal} unseen / ${gSortedPool.length} available`;
+    this.$vocabPoolInd.textContent = `${vUnseenTotal} unseen / ${vSortedPool.length} available`;
+
+    this._populateGridType('grammar', gSortedPool, config.grammarLimit);
+    this._populateGridType('vocab', vSortedPool, config.vocabLimit);
+
+    const hasActiveCards = this.activeCards.grammar.length > 0 || this.activeCards.vocab.length > 0;
+    
+    if (hasActiveCards) {
+      this.$emptyState.classList.add('hidden');
+      this.$mainContainers.classList.remove('hidden');
+    } else {
+      this.$emptyState.classList.remove('hidden');
+      this.$mainContainers.classList.add('hidden');
+    }
+
+    this.refreshDashboardScoreboard();
   }
 
-  // ── Stats ────────────────────────────────────────────────
+  _populateGridType(type, filteredSrcArray, maxLimitAllowed) {
+    const $gridContainer = type === 'grammar' ? this.$grammarGrid : this.$vocabGrid;
+    $gridContainer.innerHTML = '';
+    this.activeCards[type] = [];
 
-  /**
-   * Update the session stats display.
-   * @param {number} grammarUsed
-   * @param {number} vocabUsed
-   */
-  updateStats(grammarUsed, vocabUsed) {
-    this.$statGrammar.textContent = grammarUsed;
-    this.$statVocab.textContent   = vocabUsed;
-    this.$statTotal.textContent   = grammarUsed + vocabUsed;
+    const totalToRender = Math.min(filteredSrcArray.length, maxLimitAllowed);
+    
+    for (let i = 0; i < totalToRender; i++) {
+      const itemData = filteredSrcArray[i];
+      
+      const comp = new CardComponent(
+        itemData,
+        type,
+        this.configManager,
+        this.progressManager,
+        (evictedComp) => this.handleCardEviction(type, evictedComp, filteredSrcArray, maxLimitAllowed)
+      );
+      
+      this.activeCards[type].push(comp);
+      $gridContainer.appendChild(comp.render());
+    }
   }
 
-  /**
-   * Update the pool size indicators.
-   * @param {number} gUsed  @param {number} gTotal
-   * @param {number} vUsed  @param {number} vTotal
-   */
-  updatePoolIndicators(gUsed, gTotal, vUsed, vTotal) {
-    this.$grammarPool.textContent = `${gTotal - gUsed} of ${gTotal} remaining`;
-    this.$vocabPool.textContent   = `${vTotal - vUsed} of ${vTotal} remaining`;
+  handleCardEviction(type, evictedInstance, referencePoolArray, maxLimitAllowed) {
+    if (type === 'grammar') this.sessionClearedCount.grammar++;
+    else this.sessionClearedCount.vocab++;
+    
+    this.refreshDashboardScoreboard();
+
+    const slotIndex = this.activeCards[type].indexOf(evictedInstance);
+    if (slotIndex === -1) return;
+
+    const mappedActiveIds = this.activeCards[type].map(c => c.data.id);
+    const incomingItem = referencePoolArray.find(item => !mappedActiveIds.includes(item.id) && !this.progressManager.isSeen(item.id));
+
+    if (incomingItem) {
+      const nextComp = new CardComponent(
+        incomingItem,
+        type,
+        this.configManager,
+        this.progressManager,
+        (evictedComp) => this.handleCardEviction(type, evictedComp, referencePoolArray, maxLimitAllowed)
+      );
+      
+      this.activeCards[type][slotIndex] = nextComp;
+      
+      const nextRenderedNode = nextComp.render();
+      nextRenderedNode.classList.add('entering');
+      
+      if (evictedInstance.domElement && evictedInstance.domElement.parentNode) {
+        evictedInstance.domElement.parentNode.replaceChild(nextRenderedNode, evictedInstance.domElement);
+      }
+      
+      nextRenderedNode.addEventListener('animationend', () => nextRenderedNode.classList.remove('entering'), { once: true });
+    } else {
+      if (evictedInstance.domElement && evictedInstance.domElement.parentNode) {
+        evictedInstance.domElement.remove();
+      }
+      this.activeCards[type].splice(slotIndex, 1);
+    }
+
+    const gSortedPool = this.dataManager.getFilteredPool('grammar', this.configManager.settings, this.progressManager);
+    const vSortedPool = this.dataManager.getFilteredPool('vocab', this.configManager.settings, this.progressManager);
+    this.$grammarPoolInd.textContent = `${gSortedPool.filter(i => !this.progressManager.isSeen(i.id)).length} unseen / ${gSortedPool.length} available`;
+    this.$vocabPoolInd.textContent = `${vSortedPool.filter(i => !this.progressManager.isSeen(i.id)).length} unseen / ${vSortedPool.length} available`;
+
+    if (this.activeCards.grammar.length === 0 && this.activeCards.vocab.length === 0) {
+      this.rebuildBoard();
+    }
   }
 
-  // ── Challenge ─────────────────────────────────────────────
+  refreshDashboardScoreboard() {
+    const gCount = this.sessionClearedCount.grammar;
+    const vCount = this.sessionClearedCount.vocab;
 
-  refreshChallenge() {
-    const challenge = CHALLENGES[Math.floor(Math.random() * CHALLENGES.length)];
-    this.$challengeText.textContent = challenge;
+    this.$statGrammar.textContent = gCount;
+    this.$statVocab.textContent = vCount;
+    this.$statTotal.textContent = gCount + vCount;
   }
 
-  // ── Toast ──────────────────────────────────────────────────
-
-  /**
-   * Show a transient toast notification.
-   * @param {string} message
-   * @param {number} duration  ms before auto-dismiss
-   */
-  showToast(message, duration = 2200) {
+  showToastNotification(message) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+    
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
-    this.$toastContainer.appendChild(toast);
+    container.appendChild(toast);
 
     setTimeout(() => {
       toast.classList.add('fade-out');
       toast.addEventListener('animationend', () => toast.remove(), { once: true });
-    }, duration);
-  }
-
-  // ── Import Modal ───────────────────────────────────────────
-
-  openImportModal() {
-    this.$importModal.classList.remove('hidden');
-    this.$importFeedback.textContent = '';
-    this.$importFeedback.className   = 'import-feedback';
-  }
-
-  closeImportModal() {
-    this.$importModal.classList.add('hidden');
-  }
-
-  /**
-   * Read a JSON file and pass it to the DataStore for import.
-   * @param {File} file
-   */
-  processImportFile(file) {
-    if (!file.name.endsWith('.json')) {
-      this.setImportFeedback('Only .json files are supported.', true);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const json   = JSON.parse(e.target.result);
-        const result = this.app.dataStore.importCustom(json);
-        this.setImportFeedback(`✓ Imported ${result.added} ${result.type} entries.`, false);
-        this.app.onFilterChange(); // rebuild pools with new data
-        this.showToast(`Imported ${result.added} custom ${result.type} cards`);
-        setTimeout(() => this.closeImportModal(), 1400);
-      } catch (err) {
-        this.setImportFeedback(`Error: ${err.message}`, true);
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  setImportFeedback(msg, isError) {
-    this.$importFeedback.textContent = msg;
-    this.$importFeedback.className   = `import-feedback${isError ? ' error' : ''}`;
-  }
-
-  // ── Settings persistence ───────────────────────────────────
-
-  /**
-   * Save current settings to localStorage.
-   */
-  saveSettings() {
-    try {
-      const levels = this.getActiveLevels();
-      const topic  = this.getActiveTopic();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        levels,
-        topic,
-        darkMode:      this.app.settings.darkMode,
-        showFurigana:  this.app.settings.showFurigana,
-        showRomaji:    this.app.settings.showRomaji,
-        challengeMode: this.app.settings.challengeMode,
-		showExamples: this.app.settings.showExamples,
-      }));
-    } catch (_) {
-      // localStorage may not be available; silently ignore
-    }
-  }
-
-  /**
-   * Restore settings from localStorage and apply them to the DOM.
-   * @returns {Object|null} parsed settings or null
-   */
-  loadSettings() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /**
-   * Apply a saved settings object to the DOM controls.
-   * @param {Object} s
-   */
-  applyStoredSettings(s) {
-    if (!s) return;
-
-    // Levels
-    if (Array.isArray(s.levels)) {
-      this.$levelChips.forEach(chip => {
-        const active = s.levels.includes(chip.dataset.level);
-        chip.classList.toggle('active', active);
-        chip.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-    }
-
-    // Topic
-    if (s.topic) {
-      this.$topicChips.forEach(chip => {
-        const active = chip.dataset.topic === s.topic;
-        chip.classList.toggle('active', active);
-        chip.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-    }
-
-    // Dark mode
-    if (s.darkMode) document.body.classList.add('dark');
-
-    // Toggles
-    if (typeof s.showFurigana  === 'boolean') this.$toggleFuri.checked     = s.showFurigana;
-    if (typeof s.showRomaji    === 'boolean') this.$toggleRomaji.checked   = s.showRomaji;
-    if (typeof s.challengeMode === 'boolean') this.$toggleChallenge.checked = s.challengeMode;
-	if (typeof s.showExamples === 'boolean') this.$toggleExamples.checked = s.showExamples;
+    }, 2200);
   }
 }
-
-/* =========================================================
-   6. APP — top-level coordinator
-   ========================================================= */
-
-class App {
-  constructor() {
-    this.dataStore = new DataStore();
-
-    /** Shared settings object passed to CardManagers */
-	this.settings = {
-	  showFurigana: true,
-	  showRomaji: false,
-	  showExamples: false,
-	  darkMode: false,
-	  challengeMode: false,
-	};
-
-    this.ui = new UI(this);
-
-    /** @type {CardPool} */
-    this.grammarPool = null;
-    /** @type {CardPool} */
-    this.vocabPool   = null;
-
-    /** @type {CardManager} */
-    this.grammarManager = null;
-    /** @type {CardManager} */
-    this.vocabManager   = null;
-
-    /** Session usage counters */
-    this.grammarUsed = 0;
-    this.vocabUsed   = 0;
-  }
-
-  /**
-   * Bootstrap: load data, restore settings, build cards.
-   */
-  async init() {
-    // Restore persisted settings before loading data
-    const stored = this.ui.loadSettings();
-    if (stored) {
-      this.ui.applyStoredSettings(stored);
-      this.settings.darkMode      = stored.darkMode      || false;
-      this.settings.showFurigana  = stored.showFurigana  !== false;
-      this.settings.showRomaji    = stored.showRomaji    || false;
-      this.settings.challengeMode = stored.challengeMode || false;
-	  this.settings.showExamples = stored.showExamples !== false;
-    }
-
-    try {
-      await this.dataStore.loadBase();
-    } catch (err) {
-      console.error('Failed to load data files:', err);
-      this.ui.showToast('⚠ Could not load data files. Check the console.', 5000);
-      return;
-    }
-
-    // Wire up all UI events
-    this.ui.bindAll();
-
-    // Build initial card pools and render
-    this._buildPools();
-    this._renderAll();
-
-    // Restore challenge banner state
-    if (this.settings.challengeMode) {
-      document.getElementById('challenge-banner').classList.remove('hidden');
-      this.ui.refreshChallenge();
-    }
-  }
-
-  /**
-   * Build (or rebuild) CardPools from the current filter state.
-   */
-  _buildPools() {
-    const levels = this.ui.getActiveLevels();
-    const topic  = this.ui.getActiveTopic();
-
-    const grammar = this.dataStore.filteredGrammar(levels);
-    const vocab   = this.dataStore.filteredVocab(levels, topic);
-
-    if (this.grammarPool) {
-      this.grammarPool.updateItems(grammar);
-    } else {
-      this.grammarPool = new CardPool(grammar);
-    }
-
-    if (this.vocabPool) {
-      this.vocabPool.updateItems(vocab);
-    } else {
-      this.vocabPool = new CardPool(vocab);
-    }
-  }
-
-  /**
-   * Create CardManagers and render all cards.
-   */
-  _renderAll() {
-    const grammarGrid = document.getElementById('grammar-grid');
-    const vocabGrid   = document.getElementById('vocab-grid');
-    const emptyState  = document.getElementById('empty-state');
-
-    const hasData = this.grammarPool.poolSize > 0 || this.vocabPool.poolSize > 0;
-    emptyState.classList.toggle('hidden', hasData);
-    document.getElementById('section-grammar').classList.toggle('hidden', !hasData);
-    document.getElementById('section-vocab').classList.toggle('hidden',   !hasData);
-
-    if (!hasData) return;
-
-    // Grammar manager
-    this.grammarManager = new CardManager(
-      grammarGrid,
-      this.grammarPool,
-      'grammar',
-      this.settings,
-      (data) => this._onCardUsed('grammar', data)
-    );
-    this.grammarManager.init();
-
-    // Vocab manager
-    this.vocabManager = new CardManager(
-      vocabGrid,
-      this.vocabPool,
-      'vocab',
-      this.settings,
-      (data) => this._onCardUsed('vocab', data)
-    );
-    this.vocabManager.init();
-
-    this._updateStats();
-  }
-
-  /**
-   * Callback fired every time a card is clicked/used.
-   * @param {'grammar'|'vocab'} type
-   * @param {Object}            data
-   */
-  _onCardUsed(type, data) {
-    if (type === 'grammar') this.grammarUsed++;
-    else                    this.vocabUsed++;
-    this._updateStats();
-  }
-
-  /** Sync stats display */
-  _updateStats() {
-    this.ui.updateStats(this.grammarUsed, this.vocabUsed);
-    this.ui.updatePoolIndicators(
-      this.grammarPool.remaining, this.grammarPool.poolSize,
-      this.vocabPool.remaining,   this.vocabPool.poolSize,
-    );
-  }
-
-  // ── Public methods called by UI ──────────────────────────
-
-  /**
-   * Called when JLPT level or topic filter changes.
-   * Rebuilds pools and re-renders grids.
-   */
-  onFilterChange() {
-    this.grammarUsed = 0;
-    this.vocabUsed   = 0;
-    this._buildPools();
-    this._renderAll();
-    this.ui.saveSettings();
-  }
-
-  /**
-   * Shuffle all currently visible cards.
-   */
-  shuffle() {
-    if (this.grammarManager) this.grammarManager.shuffleAll();
-    if (this.vocabManager)   this.vocabManager.shuffleAll();
-    this.ui.showToast('Cards shuffled');
-  }
-
-  /**
-   * Reset the session — zero stats, refill pools, re-render.
-   */
-  reset() {
-    this.grammarUsed = 0;
-    this.vocabUsed   = 0;
-    if (this.grammarPool) this.grammarPool.reset();
-    if (this.vocabPool)   this.vocabPool.reset();
-    this._renderAll();
-    if (this.settings.challengeMode) this.ui.refreshChallenge();
-    this.ui.showToast('Session reset');
-  }
-
-  /**
-   * Apply furigana/romaji visibility to all live cards.
-   */
-  applyVisibility() {
-    if (this.grammarManager) this.grammarManager.applyVisibilityToAll();
-    if (this.vocabManager)   this.vocabManager.applyVisibilityToAll();
-  }
-
-  /**
-   * Export the currently active word lists as a downloadable JSON.
-   */
-  exportList() {
-    const levels = this.ui.getActiveLevels();
-    const topic  = this.ui.getActiveTopic();
-
-    const payload = {
-      exported_at: new Date().toISOString(),
-      filters: { levels, topic },
-      grammar: this.dataStore.filteredGrammar(levels),
-      vocabulary: this.dataStore.filteredVocab(levels, topic),
-    };
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `jp-drill-export-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.ui.showToast('Word list exported');
-  }
-}
-
-/* =========================================================
-   7. BOOTSTRAP
-   ========================================================= */
-
-const app = new App();
 
 document.addEventListener('DOMContentLoaded', () => {
-  app.init().catch(err => {
-    console.error('App init failed:', err);
+  const applicationEngineInstance = new App();
+  applicationEngineInstance.run().catch(err => {
+    console.error("Critical failure during startup sequence:", err);
   });
 });
