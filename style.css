@@ -933,3 +933,7 @@ body.dark .toast {
   .card-pattern { font-size: 20px; }
   .card-word    { font-size: 24px; }
 }
+
+.examples-hidden .card-example {
+  display: none;
+}

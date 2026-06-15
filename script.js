@@ -110,14 +110,11 @@ class DataStore {
    * @param {string}   topic   e.g. 'food' or 'all'
    * @returns {Array<Object>}
    */
-  filteredGrammar(levels, topic) {
-    return this.allGrammar.filter(g => {
-      const levelOk = levels.includes(g.level);
-      const topicOk = topic === 'all' || (Array.isArray(g.topic) && g.topic.includes(topic));
-      return levelOk && topicOk;
-    });
-  }
-
+	filteredGrammar(levels) {
+	  return this.allGrammar.filter(g => {
+		return levels.includes(g.level);
+	  });
+	}
   /**
    * Filter vocabulary entries by active JLPT levels and topic.
    * @param {string[]} levels
@@ -390,10 +387,11 @@ class CardManager {
   /**
    * @param {HTMLElement} card
    */
-  _applyVisibility(card) {
-    card.classList.toggle('furigana-hidden', !this.settings.showFurigana);
-    card.classList.toggle('romaji-hidden',   !this.settings.showRomaji);
-  }
+	_applyVisibility(card) {
+	  card.classList.toggle('furigana-hidden', !this.settings.showFurigana);
+	  card.classList.toggle('romaji-hidden', !this.settings.showRomaji);
+	  card.classList.toggle('examples-hidden', !this.settings.showExamples);
+	}
 
   /** Replace all current cards with new draws (shuffle effect) */
   shuffleAll() {
@@ -432,6 +430,7 @@ class UI {
     this.$toggleFuri    = document.getElementById('toggle-furigana');
     this.$toggleRomaji  = document.getElementById('toggle-romaji');
     this.$toggleChallenge = document.getElementById('toggle-challenge');
+	this.$toggleExamples = document.getElementById('toggle-examples');
 
     // ── Stats ────────────────────────────────────────────
     this.$statGrammar   = document.getElementById('stat-grammar-used');
@@ -563,6 +562,12 @@ class UI {
       files.forEach(f => this.processImportFile(f));
     });
 
+	this.$toggleExamples.addEventListener('change', () => {
+	  this.app.settings.showExamples = this.$toggleExamples.checked;
+	  this.app.applyVisibility();
+	  this.saveSettings();
+	});
+
     // Keyboard: close modal with Escape
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !this.$importModal.classList.contains('hidden')) {
@@ -693,6 +698,7 @@ class UI {
         showFurigana:  this.app.settings.showFurigana,
         showRomaji:    this.app.settings.showRomaji,
         challengeMode: this.app.settings.challengeMode,
+		showExamples: this.app.settings.showExamples,
       }));
     } catch (_) {
       // localStorage may not be available; silently ignore
@@ -745,6 +751,7 @@ class UI {
     if (typeof s.showFurigana  === 'boolean') this.$toggleFuri.checked     = s.showFurigana;
     if (typeof s.showRomaji    === 'boolean') this.$toggleRomaji.checked   = s.showRomaji;
     if (typeof s.challengeMode === 'boolean') this.$toggleChallenge.checked = s.challengeMode;
+	if (typeof s.showExamples === 'boolean') this.$toggleExamples.checked = s.showExamples;
   }
 }
 
@@ -757,12 +764,13 @@ class App {
     this.dataStore = new DataStore();
 
     /** Shared settings object passed to CardManagers */
-    this.settings = {
-      showFurigana:  true,
-      showRomaji:    false,
-      darkMode:      false,
-      challengeMode: false,
-    };
+	this.settings = {
+	  showFurigana: true,
+	  showRomaji: false,
+	  showExamples: false,
+	  darkMode: false,
+	  challengeMode: false,
+	};
 
     this.ui = new UI(this);
 
@@ -793,6 +801,7 @@ class App {
       this.settings.showFurigana  = stored.showFurigana  !== false;
       this.settings.showRomaji    = stored.showRomaji    || false;
       this.settings.challengeMode = stored.challengeMode || false;
+	  this.settings.showExamples = stored.showExamples !== false;
     }
 
     try {
@@ -824,7 +833,7 @@ class App {
     const levels = this.ui.getActiveLevels();
     const topic  = this.ui.getActiveTopic();
 
-    const grammar = this.dataStore.filteredGrammar(levels, topic);
+    const grammar = this.dataStore.filteredGrammar(levels);
     const vocab   = this.dataStore.filteredVocab(levels, topic);
 
     if (this.grammarPool) {
@@ -952,7 +961,7 @@ class App {
     const payload = {
       exported_at: new Date().toISOString(),
       filters: { levels, topic },
-      grammar: this.dataStore.filteredGrammar(levels, topic),
+      grammar: this.dataStore.filteredGrammar(levels),
       vocabulary: this.dataStore.filteredVocab(levels, topic),
     };
 
