@@ -16,8 +16,8 @@
       <div class="brand">
         <span class="brand-kanji">語</span>
         <div class="brand-text">
-          <span class="brand-title">日本語ドリル</span>
-          <span class="brand-sub">Japanese Speaking Drill</span>
+          <span class="brand-title">会話コンボ</span>
+          <span class="brand-sub">Japanese Speaking Drills</span>
         </div>
       </div>
       <div class="header-controls">
@@ -29,65 +29,97 @@
     </div>
   </header>
 
-  <section class="setup-panel" id="setup-panel">
-    <div class="setup-inner">
-
-      <div class="setup-group">
-        <label class="setup-label">JLPT Levels</label>
-        <div id="level-chips-container" class="level-chips" role="group" aria-label="JLPT level selection">
-          </div>
-      </div>
-
-      <div class="setup-group">
-        <label class="setup-label">Topic Filter</label>
-        <div id="topic-chips-container" class="topic-chips" role="group" aria-label="Topic filter">
-          </div>
-      </div>
-
-      <div class="setup-group">
-        <label class="setup-label">Display Controls</label>
-        <div class="setup-options">
-          <label class="toggle-label">
-            <input type="checkbox" id="toggle-english-first" />
-            <span class="toggle-switch"></span>
-            Show English First
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="toggle-english" />
-            <span class="toggle-switch"></span>
-            Show Translations
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="toggle-furigana" checked />
-            <span class="toggle-switch"></span>
-            Show Furigana
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="toggle-romaji" />
-            <span class="toggle-switch"></span>
-            Show Romaji
-          </label>
-          <label class="toggle-label">
-            <input type="checkbox" id="toggle-examples" checked />
-            <span class="toggle-switch"></span>
-            Show Examples
-          </label>
+  <!-- Profile Bar -->
+  <div class="profile-bar" id="profile-bar">
+    <div class="profile-inner">
+      <div class="profile-section">
+        <label class="profile-label">Profile:</label>
+        <input type="text" id="profile-name-input" class="profile-name-input" placeholder="Enter name..." maxlength="32" />
+        <button id="btn-load-profile" class="action-btn secondary small">Load</button>
+        <button id="btn-save-profile" class="action-btn secondary small">Save</button>
+        <div class="profile-list-wrapper">
+          <select id="profile-select" class="profile-select">
+            <option value="">— saved profiles —</option>
+          </select>
+          <button id="btn-delete-profile" class="action-btn danger small" title="Delete selected profile">✕</button>
         </div>
       </div>
-
-      <div class="setup-display-limits">
-        <div class="limit-item">
-          <label for="input-vocab-count">Vocabulary Visible Pool:</label>
-          <input type="number" id="input-vocab-count" min="1" max="12" value="3" />
-        </div>
-        <div class="limit-item">
-          <label for="input-grammar-count">Grammar Visible Pool:</label>
-          <input type="number" id="input-grammar-count" min="1" max="12" value="3" />
-        </div>
+      <div class="profile-section profile-io">
+        <button id="btn-export-profile" class="action-btn secondary small">⬇ Export</button>
+        <label class="action-btn secondary small" for="btn-import-file" style="cursor:pointer;">⬆ Import</label>
+        <input type="file" id="btn-import-file" accept=".json" style="display:none" />
       </div>
-
     </div>
-  </section>
+  </div>
+
+  <!-- Collapsible Setup Panel -->
+  <div class="setup-panel-wrapper">
+    <button class="setup-toggle-btn" id="setup-toggle-btn" aria-expanded="true" aria-controls="setup-panel">
+      <span class="setup-toggle-icon">⚙</span>
+      <span class="setup-toggle-label">Settings &amp; Filters</span>
+      <span class="setup-toggle-arrow" id="setup-toggle-arrow">▲</span>
+    </button>
+
+    <section class="setup-panel" id="setup-panel">
+      <div class="setup-inner">
+
+        <div class="setup-group">
+          <label class="setup-label">JLPT Levels</label>
+          <div id="level-chips-container" class="level-chips" role="group" aria-label="JLPT level selection">
+          </div>
+        </div>
+
+        <div class="setup-group">
+          <label class="setup-label">Topic Filter</label>
+          <div id="topic-chips-container" class="topic-chips" role="group" aria-label="Topic filter">
+          </div>
+        </div>
+
+        <div class="setup-group">
+          <label class="setup-label">Display Controls</label>
+          <div class="setup-options">
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-english-first" />
+              <span class="toggle-switch"></span>
+              Show English First
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-english" />
+              <span class="toggle-switch"></span>
+              Show Translations
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-furigana" checked />
+              <span class="toggle-switch"></span>
+              Show Furigana
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-romaji" />
+              <span class="toggle-switch"></span>
+              Show Romaji
+            </label>
+            <label class="toggle-label">
+              <input type="checkbox" id="toggle-examples" checked />
+              <span class="toggle-switch"></span>
+              Show Examples
+            </label>
+          </div>
+        </div>
+
+        <div class="setup-display-limits">
+          <div class="limit-item">
+            <label for="input-vocab-count">Vocabulary Visible Pool:</label>
+            <input type="number" id="input-vocab-count" min="1" max="12" value="3" />
+          </div>
+          <div class="limit-item">
+            <label for="input-grammar-count">Grammar Visible Pool:</label>
+            <input type="number" id="input-grammar-count" min="1" max="12" value="3" />
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
 
   <div class="stats-bar">
     <div class="stats-inner">
@@ -106,9 +138,9 @@
         <span class="stat-lbl">total session cleared</span>
       </div>
       <div class="stats-actions">
-        <button id="btn-shuffle" class="action-btn secondary">⇄ Shuffle Board</button>
-        <button id="btn-reset" class="action-btn secondary">↺ Clear Session Score</button>
-        <button id="btn-reset-progress" class="action-btn danger">🔥 Reset Progress Storage</button>
+        <button id="btn-shuffle" class="action-btn secondary">⇄ Shuffle</button>
+        <button id="btn-reset" class="action-btn secondary">↺ Reset Score</button>
+        <button id="btn-reset-progress" class="action-btn danger">🔥 Reset Progress</button>
       </div>
     </div>
   </div>
@@ -124,7 +156,7 @@
         <span class="pool-indicator" id="grammar-pool-indicator">— / —</span>
       </div>
       <div class="cards-grid" id="grammar-grid" role="list" aria-label="Grammar cards">
-        </div>
+      </div>
     </section>
 
     <section class="card-section" id="section-vocab">
@@ -136,7 +168,7 @@
         <span class="pool-indicator" id="vocab-pool-indicator">— / —</span>
       </div>
       <div class="cards-grid" id="vocab-grid" role="list" aria-label="Vocabulary cards">
-        </div>
+      </div>
     </section>
 
   </main>
@@ -144,7 +176,7 @@
   <div class="empty-state hidden" id="empty-state">
     <div class="empty-kanji">空</div>
     <p class="empty-title">Active card pool exhausted or no data match found</p>
-    <p class="empty-msg">Adjust your filters or hit 'Reset Progress Storage' to clear permanent exclusions from historical memory cycles.</p>
+    <p class="empty-msg">Adjust your filters or hit 'Reset Progress' to clear permanent exclusions from historical memory cycles.</p>
   </div>
 
   <div class="toast-container" id="toast-container" aria-live="polite"></div>

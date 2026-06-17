@@ -70,6 +70,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 .brand-title {
   display: block;
@@ -94,11 +95,111 @@ body.light .icon-sun { display: none; }
 body.dark .icon-moon { display: none; }
 body.dark .icon-sun { display: inline; }
 
-/* ─── SETUP CONFIG PANELS ───────────────────────────────── */
+/* ─── PROFILE BAR ────────────────────────────────────────── */
+.profile-bar {
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px var(--gap-md);
+}
+.profile-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.profile-section {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.profile-io {
+  margin-left: auto;
+}
+.profile-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.profile-name-input {
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  font-size: 13px;
+  width: 130px;
+}
+.profile-select {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  font-size: 13px;
+  max-width: 160px;
+}
+.profile-list-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── COLLAPSIBLE SETUP PANEL ───────────────────────────── */
+.setup-panel-wrapper {
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+.setup-toggle-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px var(--gap-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-system);
+  text-align: left;
+}
+.setup-toggle-btn:hover {
+  background-color: var(--border-color);
+}
+.setup-toggle-icon {
+  font-size: 16px;
+}
+.setup-toggle-label {
+  flex: 1;
+}
+.setup-toggle-arrow {
+  font-size: 11px;
+  transition: transform 0.25s ease;
+  color: var(--text-soft);
+}
+.setup-toggle-btn[aria-expanded="false"] .setup-toggle-arrow {
+  transform: rotate(180deg);
+}
+
 .setup-panel {
   background-color: var(--panel-bg);
   padding: var(--gap-md);
-  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+  max-height: 1000px;
+  opacity: 1;
+}
+.setup-panel.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 .setup-inner {
   max-width: 1200px;
@@ -129,17 +230,24 @@ body.dark .icon-sun { display: inline; }
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 .level-chip.active, .topic-chip.active {
   background-color: var(--vermillion);
   color: #ffffff;
   border-color: var(--vermillion);
+}
+.topic-chip-icon {
+  font-size: 14px;
 }
 
 /* ─── CUSTOM TOGGLE SWITCH STYLING ──────────────────────── */
@@ -168,6 +276,7 @@ body.dark .icon-sun { display: inline; }
   background-color: var(--border-color);
   border-radius: 22px;
   transition: background-color 0.2s ease;
+  flex-shrink: 0;
 }
 .toggle-switch::after {
   content: '';
@@ -193,6 +302,7 @@ body.dark .icon-sun { display: inline; }
   gap: 24px;
   border-top: 1px dashed var(--border-color);
   padding-top: 14px;
+  flex-wrap: wrap;
 }
 .limit-item {
   display: flex;
@@ -214,7 +324,7 @@ body.dark .icon-sun { display: inline; }
 .stats-bar {
   background-color: var(--card-bg);
   border-bottom: 1px solid var(--border-color);
-  padding: 12px var(--gap-md);
+  padding: 10px var(--gap-md);
 }
 .stats-inner {
   max-width: 1200px;
@@ -222,7 +332,7 @@ body.dark .icon-sun { display: inline; }
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 .stat-item {
   display: flex;
@@ -247,9 +357,10 @@ body.dark .icon-sun { display: inline; }
   margin-left: auto;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .action-btn {
-  padding: 8px 14px;
+  padding: 7px 12px;
   border-radius: 6px;
   border: 1px solid var(--border-color);
   background-color: var(--card-bg);
@@ -257,11 +368,16 @@ body.dark .icon-sun { display: inline; }
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
 }
 .action-btn.danger {
   background-color: var(--danger-color);
   color: #ffffff;
   border-color: var(--danger-color);
+}
+.action-btn.small {
+  padding: 4px 10px;
+  font-size: 12px;
 }
 
 /* ─── MAIN CARDS DRILL GRID ─────────────────────────────── */
@@ -303,7 +419,7 @@ body.dark .icon-sun { display: inline; }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--gap-md);
 }
 
@@ -317,34 +433,49 @@ body.dark .icon-sun { display: inline; }
   flex-direction: row;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-  cursor: pointer;
-  min-height: 200px;
+  min-height: 180px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .static-drill-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
+.card-times-cleared {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  color: var(--text-soft);
+  background-color: var(--panel-bg);
+  padding: 2px 6px;
+  border-radius: 10px;
+  opacity: 0.75;
+}
+
 .card-strip {
   width: 6px;
   height: 100%;
+  flex-shrink: 0;
 }
 .grammar-card .card-strip { background-color: var(--grammar-badge-color); }
 .vocab-card .card-strip { background-color: var(--vocab-badge-color); }
 
 .card-body {
-  padding: 16px;
+  padding: 14px 14px 28px 14px;
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
 }
 .card-header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+  padding-right: 32px;
 }
 .card-level {
   font-size: 11px;
@@ -352,12 +483,6 @@ body.dark .icon-sun { display: inline; }
   background-color: var(--panel-bg);
   padding: 2px 6px;
   border-radius: 4px;
-}
-.card-hint-text {
-  font-size: 10px;
-  color: var(--text-soft);
-  opacity: 0.6;
-  text-transform: uppercase;
 }
 
 .card-main-content-area {
@@ -374,6 +499,7 @@ body.dark .icon-sun { display: inline; }
   font-size: 26px;
   font-weight: 700;
   font-family: var(--font-jp-serif);
+  word-break: break-word;
 }
 .primary-display.card-meaning {
   font-size: 22px;
@@ -480,13 +606,80 @@ body.dark .icon-sun { display: inline; }
   border-radius: 6px;
   font-size: 13px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-top: 8px;
 }
 
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .cards-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 600px) {
-  .cards-grid { grid-template-columns: 1fr; }
-  .stats-actions { width: 100%; margin-left: 0; }
+  /* Cards: shrink to fit all on screen at once */
+  .cards-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+  /* Game area padding */
+  .game-area { padding: 0 12px; margin: 12px auto; gap: 24px; }
+
+  /* Header: tighten up */
+  .site-header { padding: 10px 12px; }
+  .brand-title { font-size: 15px; }
+  .brand-sub { display: none; }
+
+  /* Profile bar: stack vertically */
+  .profile-bar { padding: 10px 12px; }
+  .profile-inner { flex-direction: column; align-items: stretch; gap: 8px; }
+  .profile-section { flex-wrap: wrap; gap: 6px; }
+  .profile-io { margin-left: 0; }
+  .profile-name-input { flex: 1; min-width: 0; width: auto; }
+  .profile-select { flex: 1; min-width: 0; max-width: none; }
+  .profile-list-wrapper { flex: 1; }
+
+  /* Setup panel toggle */
+  .setup-toggle-btn { padding: 10px 12px; }
+
+  /* Setup panel internals */
+  .setup-panel { padding: 12px; }
+  .setup-inner { gap: 14px; }
+  .setup-options { gap: 14px; }
+  /* Bigger touch targets for toggles */
+  .toggle-label { font-size: 14px; min-height: 36px; }
+  .toggle-switch { width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle-switch::after { width: 18px; height: 18px; }
+  .toggle-label input:checked + .toggle-switch::after { transform: translateX(20px); }
+
+  /* Level/topic chips: bigger tap area */
+  .level-chip, .topic-chip {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  .setup-display-limits { flex-direction: column; gap: 10px; padding-top: 12px; }
+  .limit-item input { width: 60px; padding: 6px; font-size: 14px; }
+
+  /* Stats bar: stack stats then buttons */
+  .stats-bar { padding: 10px 12px; }
+  .stats-inner { gap: 8px; }
+  .stat-item { gap: 4px; }
+  .stat-num { font-size: 18px; }
   .stat-divider { display: none; }
+  .stats-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .action-btn { font-size: 12px; padding: 8px 10px; min-height: 36px; }
+
+  /* Cards: compact internals for small grid cells */
+  .card-body { padding: 10px 10px 22px 10px; }
+  .primary-display .card-word,
+  .primary-display .card-pattern { font-size: 18px; }
+  .primary-display.card-meaning { font-size: 15px; }
+  .card-furigana { font-size: 11px; }
+  .card-example-jp { font-size: 11px; }
+  .card-example-en { font-size: 10px; }
+  .card-times-cleared { font-size: 10px; }
+  .static-drill-card { min-height: 120px; }
 }
